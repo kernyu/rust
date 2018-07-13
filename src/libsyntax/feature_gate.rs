@@ -1891,14 +1891,6 @@ impl<'a> Visitor<'a> for PostExpansionVisitor<'a> {
 
 pub fn get_features(span_handler: &Handler, krate_attrs: &[ast::Attribute],
                     crate_edition: Edition) -> Features {
-    fn feature_removed(span_handler: &Handler, span: Span, reason: Option<&str>) {
-        let mut err = struct_span_err!(span_handler, span, E0557, "feature has been removed");
-        if let Some(reason) = reason {
-            err.span_note(span, reason);
-        }
-        err.emit();
-    }
-
     let mut features = Features::new();
 
     let mut feature_checker = FeatureChecker::default();
@@ -1934,49 +1926,65 @@ pub fn get_features(span_handler: &Handler, krate_attrs: &[ast::Attribute],
                 continue
             };
 
-            if let Some((.., set)) = ACTIVE_FEATURES.iter().find(|f| name == f.0) {
-                set(&mut features, mi.span);
-                feature_checker.collect(&features, mi.span);
-                continue
-            }
-
-            let removed = REMOVED_FEATURES.iter().find(|f| name == f.0);
-            let stable_removed = STABLE_REMOVED_FEATURES.iter().find(|f| name == f.0);
-            if let Some((.., reason)) = removed.or(stable_removed) {
-                feature_removed(span_handler, mi.span, *reason);
-                continue
-            }
-
-            if ACCEPTED_FEATURES.iter().any(|f| name == f.0) {
-                features.declared_stable_lang_features.push((name, mi.span));
-                continue
-            }
-
-            if let Some(edition) = ALL_EDITIONS.iter().find(|e| name == e.feature_name()) {
-                if *edition <= crate_edition {
-                    continue
-                }
-
-                for &(.., f_edition, set) in ACTIVE_FEATURES.iter() {
-                    if let Some(f_edition) = f_edition {
-                        if *edition >= f_edition {
-                            // FIXME(Manishearth) there is currently no way to set
-                            // lib features by edition
-                            set(&mut features, DUMMY_SP);
-                        }
-                    }
-                }
-
-                continue
-            }
-
-            features.declared_lib_features.push((name, mi.span));
+            set_feature(
+                name,
+                mi.span,
+                span_handler,
+                &mut features,
+                &mut feature_checker,
+                crate_edition,
+            );
         }
     }
 
     feature_checker.check(span_handler);
 
     features
+}
+
+fn set_feature(name: Symbol, span: Span, span_handler: &Handler, features: &mut Features,
+               feature_checker: &mut FeatureChecker, crate_edition: Edition) {
+    if let Some((.., set)) = ACTIVE_FEATURES.iter().find(|f| name == f.0) {
+        set(features, span);
+        feature_checker.collect(&features, span);
+        return;
+    }
+
+    let removed = REMOVED_FEATURES.iter().find(|f| name == f.0);
+    let stable_removed = STABLE_REMOVED_FEATURES.iter().find(|f| name == f.0);
+    if let Some((.., reason)) = removed.or(stable_removed) {
+        let mut err = struct_span_err!(span_handler, span, E0557, "feature has been removed");
+        if let Some(reason) = reason {
+            err.span_note(span, reason);
+        }
+        err.emit();
+        return;
+    }
+
+    if ACCEPTED_FEATURES.iter().any(|f| name == f.0) {
+        features.declared_stable_lang_features.push((name, span));
+        return;
+    }
+
+    if let Some(edition) = ALL_EDITIONS.iter().find(|e| name == e.feature_name()) {
+        if *edition <= crate_edition {
+            return;
+        }
+
+        for &(.., f_edition, set) in ACTIVE_FEATURES.iter() {
+            if let Some(f_edition) = f_edition {
+                if *edition >= f_edition {
+                    // FIXME(Manishearth) there is currently no way to set
+                    // lib features by edition
+                    set(features, DUMMY_SP);
+                }
+            }
+        }
+
+        return;
+    }
+
+    features.declared_lib_features.push((name, span));
 }
 
 /// A collector for mutually exclusive and interdependent features and their flag spans.
