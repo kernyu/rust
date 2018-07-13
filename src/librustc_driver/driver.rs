@@ -812,6 +812,7 @@ where
     let (mut krate, features) = syntax::config::features(
         krate,
         &sess.parse_sess,
+        &sess.opts.debugging_opts.feature,
         sess.opts.test,
         sess.edition(),
     );

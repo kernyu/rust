@@ -1889,7 +1889,7 @@ impl<'a> Visitor<'a> for PostExpansionVisitor<'a> {
     }
 }
 
-pub fn get_features(span_handler: &Handler, krate_attrs: &[ast::Attribute],
+pub fn get_features(span_handler: &Handler, krate_attrs: &[ast::Attribute], z_features: &[String],
                     crate_edition: Edition) -> Features {
     let mut features = Features::new();
 
@@ -1935,6 +1935,17 @@ pub fn get_features(span_handler: &Handler, krate_attrs: &[ast::Attribute],
                 crate_edition,
             );
         }
+    }
+
+    for z_feature in z_features {
+        set_feature(
+            Symbol::intern(&z_feature),
+            DUMMY_SP,
+            span_handler,
+            &mut features,
+            &mut feature_checker,
+            crate_edition,
+        );
     }
 
     feature_checker.check(span_handler);

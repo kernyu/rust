@@ -1351,6 +1351,8 @@ options! {DebuggingOptions, DebuggingSetter, basic_debugging_options,
           "generate build artifacts that are compatible with linker-based LTO."),
     no_parallel_llvm: bool = (false, parse_bool, [UNTRACKED],
           "don't run LLVM in parallel (while keeping codegen-units and ThinLTO)"),
+    feature: Vec<String> = (Vec::new(), parse_string_push, [TRACKED],
+        "enable the provided nightly feature (can be used multiple times)"),
 }
 
 pub fn default_lib_output() -> CrateType {
