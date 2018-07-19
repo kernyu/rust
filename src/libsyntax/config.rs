@@ -27,8 +27,8 @@ pub struct StripUnconfigured<'a> {
 }
 
 // `cfg_attr`-process the crate's attributes and compute the crate's features.
-pub fn features(mut krate: ast::Crate, sess: &ParseSess, should_test: bool, edition: Edition)
-                -> (ast::Crate, Features) {
+pub fn features(mut krate: ast::Crate, sess: &ParseSess, z_features: &[String], should_test: bool,
+                edition: Edition) -> (ast::Crate, Features) {
     let features;
     {
         let mut strip_unconfigured = StripUnconfigured {
@@ -47,7 +47,7 @@ pub fn features(mut krate: ast::Crate, sess: &ParseSess, should_test: bool, edit
             return (krate, Features::new());
         }
 
-        features = get_features(&sess.span_diagnostic, &krate.attrs, edition);
+        features = get_features(&sess.span_diagnostic, &krate.attrs, &z_features, edition);
 
         // Avoid reconfiguring malformed `cfg_attr`s
         if err_count == sess.span_diagnostic.err_count() {
