@@ -259,6 +259,7 @@ fn mk_reexport_mod(cx: &mut TestCtxt,
     let reexport_mod = ast::Mod {
         inner: DUMMY_SP,
         items,
+        inline: true,
     };
 
     let sym = Ident::with_empty_ctxt(Symbol::gensym("__test_reexports"));
@@ -575,6 +576,7 @@ fn mk_test_module(cx: &mut TestCtxt) -> (P<ast::Item>, Option<P<ast::Item>>) {
     let testmod = ast::Mod {
         inner: DUMMY_SP,
         items: vec![import, mainfn, tests],
+        inline: true,
     };
     let item_ = ast::ItemKind::Mod(testmod);
     let mod_ident = Ident::with_empty_ctxt(Symbol::gensym("__test"));

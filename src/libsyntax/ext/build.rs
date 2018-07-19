@@ -1100,6 +1100,7 @@ impl<'a> AstBuilder for ExtCtxt<'a> {
             ast::ItemKind::Mod(ast::Mod {
                 inner: inner_span,
                 items,
+                inline: true
             })
         )
     }
